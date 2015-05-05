@@ -44,7 +44,7 @@ unsigned int process_get_base_address(process* p)
 		return -1;
 
 	CloseHandle(snapshot);
-	p->base_address = (DWORD) module.modBaseAddr;
+	p->base_address = module.modBaseAddr;
 	return p->base_address;
 }
 
@@ -73,4 +73,45 @@ unsigned int process_read_from_offsets(process* p, const unsigned long* offsets,
 bool process_write(process* p, unsigned long address, void* buffer, unsigned long buffer_size)
 {
 	return WriteProcessMemory(p->handler, (LPVOID) address, (LPCVOID) buffer, buffer_size, NULL);
+}
+
+int process_create_window(process* p)
+{
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+		return 1;
+
+	if (!(p->graphics.window = SDL_CreateWindowFrom(p->window_handler)))
+		return 2;
+
+	SDL_GetWindowSize(p->graphics.window, &p->graphics.width, &p->graphics.height);
+
+	p->graphics.screen = SDL_GetWindowSurface(p->graphics.window);
+	p->graphics.renderer = SDL_CreateRenderer(p->graphics.window, -1, SDL_RENDERER_ACCELERATED);
+
+	if (!p->graphics.renderer)
+		return 3;
+
+	SDL_SetColorKey(p->graphics.screen, SDL_TRUE, SDL_MapRGB(p->graphics.screen->format, 255, 0, 255));
+	//SDL_SetSurfaceAlphaMod(screen, 255);
+
+	return 0;
+}
+
+void process_keyboard_hook(process* p, HOOKPROC proc)
+{
+	p->keyboard_hook = SetWindowsHookEx(WH_KEYBOARD_LL, proc, 0, 0);
+}
+
+void process_keyboard_unhook(process* p)
+{
+	UnhookWindowsHookEx(p->keyboard_hook);
+}
+
+void process_peek_message(process* p)
+{
+	while (PeekMessage(&p->msg, NULL, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&p->msg);
+		DispatchMessage(&p->msg);
+	}
 }

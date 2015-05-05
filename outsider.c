@@ -18,6 +18,12 @@ void outsider_read_camera(process* p)
 	process_read(p, cam.base_address + 0x68 + 0x04, &cam.y, 4);
 }
 
+void outsider_write_camera(process* p)
+{
+	process_write(p, cam.base_address + 0x68, &cam.x, 4);
+	process_write(p, cam.base_address + 0x68 + 0x04, &cam.y, 4);
+}
+
 /*
  * player
  */

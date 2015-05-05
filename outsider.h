@@ -30,6 +30,7 @@ camera cam;
 
 void outsider_resolve_camera(process* p);
 void outsider_read_camera(process* p);
+void outsider_write_camera(process* p);
 
 /*
  * player
@@ -37,9 +38,7 @@ void outsider_read_camera(process* p);
 void outsider_resolve_players(process* p, player* players, int player_count);
 void outsider_read_player(process* p, player* player);
 void outsider_read_players(process* p, player* players, const int player_count);
-
 void outsider_write_player(process* p, player* player);
-
 void outsider_generate_colors(player* players, const int player_count);
 
 #endif
