@@ -2,7 +2,7 @@
 # Makfile
 #
 
-LIBS = -lmingw32 -lSDL2main -lSDL2 -lgdi32
+LIBS = -lmingw32 -lgdi32
 
 all: compile link
 

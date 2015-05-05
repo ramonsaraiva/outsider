@@ -75,28 +75,6 @@ bool process_write(process* p, unsigned long address, void* buffer, unsigned lon
 	return WriteProcessMemory(p->handler, (LPVOID) address, (LPCVOID) buffer, buffer_size, NULL);
 }
 
-int process_create_window(process* p)
-{
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
-		return 1;
-
-	if (!(p->graphics.window = SDL_CreateWindowFrom(p->window_handler)))
-		return 2;
-
-	SDL_GetWindowSize(p->graphics.window, &p->graphics.width, &p->graphics.height);
-
-	p->graphics.screen = SDL_GetWindowSurface(p->graphics.window);
-	p->graphics.renderer = SDL_CreateRenderer(p->graphics.window, -1, SDL_RENDERER_ACCELERATED);
-
-	if (!p->graphics.renderer)
-		return 3;
-
-	SDL_SetColorKey(p->graphics.screen, SDL_TRUE, SDL_MapRGB(p->graphics.screen->format, 255, 0, 255));
-	//SDL_SetSurfaceAlphaMod(screen, 255);
-
-	return 0;
-}
-
 void process_keyboard_hook(process* p, HOOKPROC proc)
 {
 	p->keyboard_hook = SetWindowsHookEx(WH_KEYBOARD_LL, proc, 0, 0);
@@ -114,4 +92,14 @@ void process_peek_message(process* p)
 		TranslateMessage(&p->msg);
 		DispatchMessage(&p->msg);
 	}
+}
+
+void process_get_window_size(process* p, int* width, int* height)
+{
+	RECT r;
+
+	GetWindowRect(p->window_handler, &r);
+
+	*width = r.right - r.left;
+	*height = r.bottom - r.top;
 }

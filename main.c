@@ -10,8 +10,9 @@
 #include <string.h>
 #include <time.h>
 #include <Windows.h>
+#include <Windowsx.h>
+#include <Wingdi.h>
 #include <TlHelp32.h>
-#include "SDL2/SDL.h"
 
 #include "process.h"
 #include "outsider.h"
@@ -19,8 +20,8 @@
 #define PLAYER_C 12
 #define ME 0
 
-#define WIDTH 300
-#define HEIGHT 300
+int width;
+int height;
 
 player players[PLAYER_C];
 int cmode;
@@ -73,15 +74,15 @@ int main(int argc, char** argv)
 
 		update(&p);
 
-		//SDL_SetRenderDrawColor(p.graphics.renderer, 255, 0, 255, 255);
-		//SDL_RenderClear(p.graphics.renderer);
+		p.hdc = GetDC(p.window_handler);
+
+		//TextOut(p.hdc, 0, 0, "EHUADHAUEHAUDHAUEHAUHE", 32);
 
 		draw_map(&p);
 
-		SDL_RenderPresent(p.graphics.renderer);
+		ReleaseDC(p.window_handler, p.hdc);
 
 		flush(&p);
-		//SDL_Delay(10);
 	}
 
 	quit(&p);
@@ -103,22 +104,10 @@ bool init(process* p)
 		return false;
 	}
 
+	process_get_window_size(p, &width, &height);
+
 	printf("[*] process hooked, base address: %x\n", p->base_address);
-
-	process_status = process_create_window(p);
-
-	if (process_status)
-	{
-		if (process_status == 1)
-			printf("[*] ERROR: could not initialize SDL\n");
-		else if (process_status == 2)
-			printf("[*] ERROR: could not attach SDL window to ousider window\n");
-		else if (process_status == 3)
-			printf("[*] ERROR: failed to create SDL window renderer\n");
-
-		return false;
-	}
-
+	
 	process_keyboard_hook(p, keyboard_proc);
 
 	return true;
@@ -126,10 +115,6 @@ bool init(process* p)
 
 void quit(process* p)
 {
-	SDL_FreeSurface(p->graphics.screen);
-	SDL_DestroyWindow(p->graphics.window);
-	SDL_Quit();
-
 	process_keyboard_unhook(p);
 }
 
@@ -185,23 +170,22 @@ void draw_map(process* p)
 	int map_size;
 	int player_rect_size;
 	int i;
+	
+	HBRUSH brush;
+	HBRUSH pbrush;
 
-	/*
-	 * dont't have a fucking idea what are the correct map borders
-	 * even GIL does not know that.........
-	 */
+	brush = CreateSolidBrush(RGB(255, 0, 255));
+	SelectObject(p->hdc, brush);
+
 	max_x = 130;
 	max_y = 1200;
 	min_x = -10;
 	min_y = 950;
 	
-	map_size = p->graphics.width * 0.1;
-
+	map_size = width * 0.1;
 	player_rect_size = map_size * 0.1;
 
-	SDL_Rect rectm = {0, 0, map_size, map_size};
-	SDL_SetRenderDrawColor(p->graphics.renderer, 0x00, 0xFF, 0xFF, 0xFF);
-	SDL_RenderFillRect(p->graphics.renderer, &rectm);
+	Rectangle(p->hdc, 0, 0, map_size, map_size);
 
 	for (i = 0; i < PLAYER_C; i++)
 	{
@@ -209,17 +193,22 @@ void draw_map(process* p)
 		pmap_x = ((map_size - 0) * (players[i].x - min_x) / (max_x - min_x)) + 0;
 		pmap_y = ((map_size - 0) * (players[i].y - min_y) / (max_y - min_y)) + 0;
 
+		/*
 		if (i == ME)
 		{
-			SDL_Rect rectb = {map_size - pmap_x - player_rect_size / 2 * 1.2, map_size - pmap_y - player_rect_size / 2 * 1.2, player_rect_size * 1.2, player_rect_size * 1.2};
-			SDL_SetRenderDrawColor(p->graphics.renderer, 0x00, 0x00, 0x00, 0xFF);
-			SDL_RenderFillRect(p->graphics.renderer, &rectb);
+			brush = CreateSolidBrush(RGB(0, 0, 0));
+			SelectObject(p->hdc, brush);
+			Rectangle(p->hdc, map_size - pmap_x - player_rect_size / 2 * 1.2, map_size - pmap_y - player_rect_size / 2 * 1.2, player_rect_size * 1.2, player_rect_size * 1.2);
 		}
+		*/
 
-		SDL_Rect rect = {map_size - pmap_x - player_rect_size / 2, map_size - pmap_y - player_rect_size / 2, player_rect_size, player_rect_size};
-		SDL_SetRenderDrawColor(p->graphics.renderer, players[i].color[0], players[i].color[1], players[i].color[2], 0xFF);
-		SDL_RenderFillRect(p->graphics.renderer, &rect);
+		pbrush = CreateSolidBrush(RGB(players[i].color[0], players[i].color[1], players[i].color[2]));
+		SelectObject(p->hdc, pbrush);
+		Rectangle(p->hdc, map_size - pmap_x - player_rect_size / 2, map_size - pmap_y - player_rect_size / 2, player_rect_size, player_rect_size);
+		break;
 	}
+
+	DeleteObject(brush);
 }
 
 void update(process* p)
